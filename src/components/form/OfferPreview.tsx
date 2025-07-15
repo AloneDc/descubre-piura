@@ -23,11 +23,12 @@ const OfferPreview: React.FC<Props> = ({ offers }) => {
               {offer.title}
             </h4>
             <p className="text-gray-700 text-sm mt-1">{offer.description}</p>
-            {offer.start_date && offer.end_date && (
+            {offer.valid_from && offer.valid_to && (
               <p className="text-xs text-gray-500 mt-2 italic">
-                Vigencia: {offer.start_date} - {offer.end_date}
+                Vigencia: {offer.valid_from} - {offer.valid_to}
               </p>
             )}
+
             <div className="mt-2">
               <button className="text-sm text-yellow-700 font-medium hover:underline">
                 ¡Aprovecha ahora!
