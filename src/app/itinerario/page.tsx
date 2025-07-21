@@ -44,15 +44,18 @@ export default function ItineraryPage() {
       const user = session.user;
       setUserName(user.user_metadata?.name || user.email);
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("itineraries")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
+        .order("updated_at", { ascending: false })
         .limit(1)
         .single();
 
-      if (data) {
+      if (error) {
+        console.error("❌ Error fetching itinerary:", error);
+      } else {
+        console.log("📦 Itinerario recuperado:", data);
         setItinerary(data);
       }
 
@@ -212,12 +215,10 @@ export default function ItineraryPage() {
             </Card>
           )}
 
-          {/* Acciones */}
+          {/* Acciones y Feedback */}
           <Card title="⚡ Acciones" color="from-gray-800 to-slate-800">
             <ItineraryActions />
           </Card>
-
-          {/* Feedback */}
           <Card title="📝 Opinión" color="from-pink-600 to-rose-600">
             <ItineraryFeedback itineraryId={itinerary.id} />
           </Card>
@@ -239,7 +240,6 @@ export default function ItineraryPage() {
   );
 }
 
-// Reusable Card component
 function Card({
   title,
   color,

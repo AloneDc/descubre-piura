@@ -91,6 +91,7 @@ ${limitedPlaces
 - Horario tentativo (mañana / tarde)
 - Almuerzo sugerido
 - Nota cultural si aplica
+-Presupuesto estimado de gastos en soles por persona
 - En español, formato claro tipo guía de viaje.
 `.trim();
 }
@@ -112,6 +113,14 @@ export async function POST(req: Request) {
       climate: string;
       offers: Offer[];
     } = await req.json();
+
+    console.log("🔍 Recibido en API:", {
+      form,
+      days,
+      places,
+      stats,
+      climate,
+    });
 
     // Validación básica
     if (
