@@ -1,130 +1,179 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSupabaseClient, useUser } from "@supabase/auth-helpers-react";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import {
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+} from "@heroicons/react/20/solid";
 import Link from "next/link";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const supabase = useSupabaseClient();
-  const user = useUser();
+  const router = useRouter();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [country, setCountry] = useState("");
-  const [region, setRegion] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    country: "",
+    region: "",
+    email: "",
+    password: "",
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [status, setStatus] = useState<{ error?: string; success?: string }>(
+    {}
+  );
 
-  useEffect(() => {
-    if (user) {
-      router.push("/");
-    }
-  }, [user, router]);
+  const allowedCountries = ["Perú", "Chile", "Colombia", "México", "Argentina"];
+  const nameRegex = /^[a-zA-ZÁÉÍÓÚÑñ ]{3,30}$/;
+  const phoneRegex = /^[0-9]{7,15}$/;
+  const locationRegex = /^[a-zA-ZÁÉÍÓÚÑñ ]{2,30}$/;
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const validate = () => {
+    const { name, phone, country, region, email, password } = form;
+    const newErrors: Record<string, string> = {};
+
+    if (!nameRegex.test(name)) newErrors.name = "Nombre inválido.";
+    if (!phoneRegex.test(phone)) newErrors.phone = "Teléfono inválido.";
+    if (!allowedCountries.includes(country))
+      newErrors.country = "País no permitido.";
+    if (!locationRegex.test(region)) newErrors.region = "Región inválida.";
+    if (!email.includes("@") || email.length < 6)
+      newErrors.email = "Correo inválido.";
+    if (password.length < 6) newErrors.password = "Contraseña muy corta.";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    setErrors({ ...errors, [e.target.name]: "" });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
+
     setLoading(true);
-    setErrorMsg("");
+    setStatus({});
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { email, password, name, phone, country, region } = form;
+    const cleanedEmail = email.trim().toLowerCase();
 
-    if (error) {
-      setErrorMsg(error.message);
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: cleanedEmail,
+      password,
+      options: {
+        emailRedirectTo: `${location.origin}/auth/login`,
+      },
+    });
+
+    if (signUpError) {
+      setStatus({ error: signUpError.message });
       setLoading(false);
       return;
     }
 
-    const newUser = data.user;
-    if (newUser) {
-      const { error: dbError } = await supabase.from("users").insert({
-        id: newUser.id,
+    const userId = data.user?.id;
+    if (userId) {
+      const { error: insertError } = await supabase.from("users").upsert({
+        id: userId,
         name,
         phone,
         country,
         region,
       });
 
-      if (dbError) {
-        setErrorMsg("Error creando datos del usuario.");
-        console.error(dbError);
+      if (insertError) {
+        setStatus({ error: "No se pudo guardar tu información." });
         setLoading(false);
         return;
       }
-
-      router.push("/perfil");
     }
 
-    setLoading(false);
+    setStatus({ success: "✅ Revisa tu correo para validar tu cuenta." });
+    setTimeout(() => router.refresh(), 2000);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow">
-        <h1 className="text-2xl font-semibold mb-6 text-gray-800">
+    <div className="min-h-screen bg-blue-50 flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-xl bg-white p-10 rounded-xl shadow-xl">
+        <h1 className="text-3xl font-bold text-blue-800 text-center mb-8">
           Crear cuenta
         </h1>
-        {errorMsg && <p className="text-red-600 mb-4">{errorMsg}</p>}
-        <form onSubmit={handleRegister} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Nombre"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full px-3 py-2 border rounded"
-          />
-          <input
-            type="text"
-            placeholder="Teléfono"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
-          />
-          <input
-            type="text"
-            placeholder="País"
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
-          />
-          <input
-            type="text"
-            placeholder="Región"
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
-          />
-          <input
-            type="email"
-            placeholder="Correo electrónico"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-3 py-2 border rounded"
-          />
-          <input
-            type="password"
-            placeholder="Contraseña"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full px-3 py-2 border rounded"
-          />
+
+        {status.error && (
+          <p className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4 border border-red-300">
+            {status.error}
+          </p>
+        )}
+        {status.success && (
+          <p className="bg-green-100 text-green-700 px-4 py-2 rounded mb-4 border border-green-300">
+            {status.success}
+          </p>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {[
+            { name: "name", label: "Nombre completo" },
+            { name: "phone", label: "Teléfono" },
+            { name: "country", label: "País" },
+            { name: "region", label: "Región" },
+            { name: "email", label: "Correo electrónico" },
+            { name: "password", label: "Contraseña", type: "password" },
+          ].map(({ name, label, type = "text" }) => (
+            <div key={name}>
+              <label
+                htmlFor={name}
+                className="block text-sm font-medium text-blue-700 mb-1"
+              >
+                {label}
+              </label>
+              <div className="relative">
+                <input
+                  type={type}
+                  name={name}
+                  value={form[name as keyof typeof form]}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2 rounded-md border focus:outline-none ${
+                    errors[name]
+                      ? "border-red-400 focus:ring-2 focus:ring-red-300"
+                      : "border-blue-300 focus:ring-2 focus:ring-blue-400"
+                  }`}
+                />
+                {form[name as keyof typeof form] && !errors[name] && (
+                  <CheckCircleIcon className="h-5 w-5 text-green-500 absolute right-3 top-2.5" />
+                )}
+                {errors[name] && (
+                  <ExclamationCircleIcon className="h-5 w-5 text-red-500 absolute right-3 top-2.5" />
+                )}
+              </div>
+              {errors[name] && (
+                <p className="text-sm text-red-500 mt-1">{errors[name]}</p>
+              )}
+            </div>
+          ))}
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700"
+            className="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-50"
           >
             {loading ? "Registrando..." : "Crear cuenta"}
           </button>
         </form>
-        <p className="mt-4 text-sm text-center">
-          ¿Ya tienes cuenta?{" "}
-          <Link href="/auth/login" className="text-indigo-600 hover:underline">
+
+        <p className="mt-5 text-center text-sm text-blue-700">
+          ¿Ya tienes una cuenta?{" "}
+          <Link
+            href="/auth/login"
+            className="text-blue-600 font-semibold hover:underline"
+          >
             Inicia sesión
           </Link>
         </p>
