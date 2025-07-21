@@ -1,13 +1,41 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabaseClient";
 import {
   MapPinIcon,
   SparklesIcon,
   CalendarDaysIcon,
   ClockIcon,
-  StarIcon,
 } from "@heroicons/react/24/outline";
 
+type Destino = {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+};
+
 export default function Home() {
+  const [destinos, setDestinos] = useState<Destino[]>([]);
+
+  useEffect(() => {
+    const fetchDestinos = async () => {
+      const { data, error } = await supabase
+        .from("places")
+        .select("id, name, description, type")
+        .eq("is_active", true)
+        .limit(8)
+        .order("updated_at", { ascending: false });
+
+      if (!error && data) setDestinos(data);
+      else console.error("Error fetching destinos", error);
+    };
+
+    fetchDestinos();
+  }, []);
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -112,7 +140,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Popular Destinations */}
+      {/* Destinos Populares */}
       <section className="py-20 bg-gradient-to-br from-gray-50 to-sky-50">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
@@ -125,48 +153,13 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                name: "Máncora",
-                image: "/mancora.jpg",
-                description: "Playas paradisíacas y surf",
-                rating: 4.8,
-                activities: "Surf, Playa, Vida Nocturna",
-              },
-              {
-                name: "Catacaos",
-                image: "/catacaos.jpg",
-                description: "Artesanías y tradición",
-                rating: 4.6,
-                activities: "Artesanías, Cultura, Gastronomía",
-              },
-              {
-                name: "Cabo Blanco",
-                image: "/cabo-blanco.jpg",
-                description: "Pesca deportiva legendaria",
-                rating: 4.7,
-                activities: "Pesca, Historia, Naturaleza",
-              },
-              {
-                name: "Sechura",
-                image: "/sechura.jpg",
-                description: "Desierto y lagunas",
-                rating: 4.5,
-                activities: "Aventura, Desierto, Fotografía",
-              },
-            ].map((destination, index) => (
+            {destinos.map((destination) => (
               <div
-                key={index}
+                key={destination.id}
                 className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all transform hover:-translate-y-1"
               >
-                <div className="h-48 bg-gradient-to-br from-sky-200 to-cyan-200 relative">
-                  <div className="absolute inset-0 bg-gray-300 animate-pulse"></div>
-                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-full flex items-center gap-1">
-                    <StarIcon className="h-4 w-4 text-yellow-500 fill-current" />
-                    <span className="text-sm font-medium">
-                      {destination.rating}
-                    </span>
-                  </div>
+                <div className="h-48 bg-gradient-to-br from-sky-200 to-cyan-200 flex items-center justify-center text-center text-white text-xl font-semibold">
+                  {destination.name}
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold text-lg text-gray-900 mb-1">
@@ -176,7 +169,7 @@ export default function Home() {
                     {destination.description}
                   </p>
                   <p className="text-xs text-cyan-600 font-medium">
-                    {destination.activities}
+                    {destination.type}
                   </p>
                 </div>
               </div>
@@ -185,61 +178,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How it Works */}
-      <section className="py-20 bg-white">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Cómo Funciona
-            </h2>
-            <p className="text-xl text-gray-600">
-              Crear tu itinerario perfecto en 3 simples pasos
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">
-                1
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Cuéntanos tus Preferencias
-              </h3>
-              <p className="text-gray-600">
-                Dinos qué te gusta hacer, cuánto tiempo tienes y cuál es tu
-                presupuesto
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-20 h-20 bg-gradient-to-r from-sky-500 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">
-                2
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                IA Crea tu Itinerario
-              </h3>
-              <p className="text-gray-600">
-                Nuestro algoritmo diseña un plan personalizado con los mejores
-                destinos y actividades
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold">
-                3
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                ¡Disfruta tu Viaje!
-              </h3>
-              <p className="text-gray-600">
-                Sigue tu itinerario optimizado y descubre lo mejor de Piura
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
+      {/* CTA */}
       <section className="py-20 bg-gradient-to-r from-cyan-500 to-blue-600">
         <div className="max-w-4xl mx-auto text-center px-4">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
@@ -260,31 +199,12 @@ export default function Home() {
             </Link>
 
             <Link
-              href="/eventos"
+              href="/events"
               className="inline-flex items-center gap-2 bg-white/10 backdrop-blur text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white/20 transition-all border border-white/30"
             >
               <CalendarDaysIcon className="h-5 w-5" />
               Ver Eventos
             </Link>
-          </div>
-
-          <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-3xl font-bold text-white">500+</div>
-              <div className="text-cyan-100">Destinos</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-white">10K+</div>
-              <div className="text-cyan-100">Viajeros</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-white">4.9</div>
-              <div className="text-cyan-100">Rating</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-white">24/7</div>
-              <div className="text-cyan-100">Soporte</div>
-            </div>
           </div>
         </div>
       </section>

@@ -106,8 +106,8 @@ function NavLinks({ mobile = false }: { mobile?: boolean }) {
       <Link href="/events" className={linkClass}>
         <SparklesIcon className="h-5 w-5" /> Eventos
       </Link>
-      <Link href="/noticias" className={linkClass}>
-        <NewspaperIcon className="h-5 w-5" /> Noticias
+      <Link href="/destinos" className={linkClass}>
+        <NewspaperIcon className="h-5 w-5" /> Destinos
       </Link>
 
       {user ? (
